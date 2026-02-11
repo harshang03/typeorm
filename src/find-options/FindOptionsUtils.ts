@@ -8,6 +8,8 @@ import { FindTreeOptions } from "./FindTreeOptions"
 import { ObjectLiteral } from "../common/ObjectLiteral"
 import { RelationMetadata } from "../metadata/RelationMetadata"
 import { EntityPropertyNotFoundError } from "../error"
+import { RelationIdMetadata } from "../metadata/RelationIdMetadata"
+import { EmbeddedMetadata } from "../metadata/EmbeddedMetadata"
 
 /**
  * Utilities to work with FindOptions.
@@ -103,6 +105,48 @@ export class FindOptionsUtils {
         }
 
         return qb
+    }
+
+    static findRelationIdMetadata(
+        metadata: EntityMetadata,
+        propertyPath: string,
+    ): RelationIdMetadata | undefined {
+        const direct = metadata.relationIds.find(
+            (relationId) => relationId.propertyName === propertyPath,
+        )
+        if (direct) return direct
+
+        if (!propertyPath.includes(".")) return undefined
+
+        const pathParts = propertyPath.split(".")
+        const embedded = this.findEmbeddedFromPath(
+            metadata.embeddeds,
+            pathParts.slice(0, -1),
+        )
+        if (!embedded) return undefined
+
+        const lastPart = pathParts[pathParts.length - 1]
+        return embedded.relationIds.find(
+            (relationId) => relationId.propertyName === lastPart,
+        )
+    }
+
+    private static findEmbeddedFromPath(
+        embeddeds: EmbeddedMetadata[],
+        pathParts: string[],
+    ): EmbeddedMetadata | undefined {
+        let currentEmbeddeds = embeddeds
+        let currentEmbedded: EmbeddedMetadata | undefined
+
+        for (const part of pathParts) {
+            currentEmbedded = currentEmbeddeds.find(
+                (embedded) => embedded.propertyName === part,
+            )
+            if (!currentEmbedded) return undefined
+            currentEmbeddeds = currentEmbedded.embeddeds
+        }
+
+        return currentEmbedded
     }
 
     // -------------------------------------------------------------------------
