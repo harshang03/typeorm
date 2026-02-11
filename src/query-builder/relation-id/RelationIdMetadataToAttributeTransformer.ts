@@ -30,7 +30,7 @@ export class RelationIdMetadataToAttributeTransformer {
                         this.expressionMap.mainAlias!.name,
                         relationId,
                     )
-                    this.expressionMap.relationIdAttributes.push(attribute)
+                    this.addAttribute(attribute)
                 },
             )
         }
@@ -45,7 +45,7 @@ export class RelationIdMetadataToAttributeTransformer {
                     join.alias.name,
                     relationId,
                 )
-                this.expressionMap.relationIdAttributes.push(attribute)
+                this.addAttribute(attribute)
             })
         })
     }
@@ -65,5 +65,16 @@ export class RelationIdMetadataToAttributeTransformer {
             alias: relationId.alias,
             queryBuilderFactory: relationId.queryBuilderFactory,
         })
+    }
+
+    private addAttribute(attribute: RelationIdAttribute) {
+        const exists = this.expressionMap.relationIdAttributes.some(
+            (existing) =>
+                existing.mapToProperty === attribute.mapToProperty &&
+                existing.relationName === attribute.relationName,
+        )
+        if (!exists) {
+            this.expressionMap.relationIdAttributes.push(attribute)
+        }
     }
 }

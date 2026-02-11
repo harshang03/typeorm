@@ -46,6 +46,7 @@ import { InstanceChecker } from "../util/InstanceChecker"
 import { FindOperator } from "../find-options/FindOperator"
 import { ApplyValueTransformers } from "../util/ApplyValueTransformers"
 import { SqlServerDriver } from "../driver/sqlserver/SqlServerDriver"
+import { RelationIdMetadata } from "../metadata/RelationIdMetadata"
 
 /**
  * Allows to build complex sql queries in a fashion way and execute those queries.
@@ -4058,13 +4059,19 @@ export class SelectQueryBuilder<Entity extends ObjectLiteral>
                 metadata.findColumnWithPropertyPathStrict(propertyPath)
             const embed = metadata.findEmbeddedWithPropertyPath(propertyPath)
             const relation = metadata.findRelationWithPropertyPath(propertyPath)
+            const relationId = FindOptionsUtils.findRelationIdMetadata(
+                metadata,
+                propertyPath,
+            )
 
-            if (!embed && !column && !relation)
+            if (!embed && !column && !relation && !relationId)
                 throw new EntityPropertyNotFoundError(propertyPath, metadata)
 
             if (column) {
                 this.selects.push(alias + "." + propertyPath)
                 // this.addSelect(alias + "." + propertyPath);
+            } else if (relationId) {
+                this.buildRelationIdSelect(metadata, alias, relationId)
             } else if (embed) {
                 this.buildSelect(
                     select[key] as FindOptionsSelect<any>,
@@ -4087,6 +4094,32 @@ export class SelectQueryBuilder<Entity extends ObjectLiteral>
                 //     }
                 //     this.buildOrder(select[key] as FindOptionsOrder<any>, relation.inverseEntityMetadata, joinAlias);
             }
+        }
+    }
+
+    protected buildRelationIdSelect(
+        metadata: EntityMetadata,
+        alias: string,
+        relationId: RelationIdMetadata,
+    ) {
+        const selected = new Set(this.selects)
+        const addSelection = (propertyPath: string) => {
+            const selection = `${alias}.${propertyPath}`
+            if (!selected.has(selection)) {
+                this.selects.push(selection)
+                selected.add(selection)
+            }
+        }
+
+        metadata.primaryColumns.forEach((primaryColumn) => {
+            addSelection(primaryColumn.propertyPath)
+        })
+
+        const relation = relationId.relation
+        if (relation.isManyToOne || relation.isOneToOneOwner) {
+            relation.joinColumns.forEach((joinColumn) => {
+                addSelection(joinColumn.propertyPath)
+            })
         }
     }
 
