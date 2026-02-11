@@ -48,10 +48,7 @@ import { ApplyValueTransformers } from "../util/ApplyValueTransformers"
 import { SqlServerDriver } from "../driver/sqlserver/SqlServerDriver"
 import { RelationIdMetadata } from "../metadata/RelationIdMetadata"
 
-/**
- * Allows to build complex sql queries in a fashion way and execute those queries.
- */
-export class SelectQueryBuilder<Entity extends ObjectLiteral>
+lass SelectQueryBuilder<Entity extends ObjectLiteral>
     extends QueryBuilder<Entity>
     implements WhereExpressionBuilder
 {
